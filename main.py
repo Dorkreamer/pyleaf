@@ -3,6 +3,13 @@ from subprocess import check_output
 from logos import imgs
 from platform import release
 from colorama import Fore, Back
+from os import name
+
+if name.lower() == "nt":
+    from platform import system
+    from platform import version
+    from platform import node
+    from subprocess import run
 
 class Linux:
     @staticmethod
@@ -20,7 +27,6 @@ class Linux:
             ip = check_output(['hostname', '-i']).decode().strip().split(" ")[0]
             Linux._ip_address = ip
         except Exception as e:
-            print("Error:", e)
             Linux._ip_address = None
         return Linux._ip_address
 
@@ -46,20 +52,90 @@ class Linux:
     @staticmethod
     def hostname():
         return open("/etc/hostname", "r").read()
+    
+    @staticmethod
+    def kernel_version():
+        return release()
+
+class NT:
+    @staticmethod
+    def os_name():
+        return f"{system()} {release()}"
+    
+    @staticmethod
+    def get_ip():
+        hostname = getfqdn()
+        return gethostbyname_ex(hostname)[2][1]
+    
+    @staticmethod
+    def kernel_version():
+        return version()
+
+    @staticmethod
+    def uptime():
+        minutes = check_output("powershell -NoLogo -NoProfile [TimeSpan]::FromMilliseconds([Math]::Abs([Environment]::TickCount)).TotalMinutes")
+        minutes = str(minutes).lstrip("b'")
+        minutes = minutes.rstrip("\\r\\n'")
+        minutes = round(float(minutes))
+        
+        days = minutes // (60 * 24)
+        remaining_minutes = minutes % (60 * 24)
+        hours = remaining_minutes // 60
+        remaining_minutes %= 60
+        
+        # Format into a pretty string
+        uptime_string = f"{days}d {hours}h {remaining_minutes}m"
+        
+        return uptime_string
+
+    @staticmethod
+    def hostname():
+        return node()
+
+    @staticmethod
+    def get_ip():
+        try:
+            # Execute the 'ipconfig' command to get network configuration information
+            result = run(["ipconfig"], capture_output=True, text=True)
+            # Split the output by lines
+            output_lines = result.stdout.split('\n')
+            # Initialize a variable to store the local IPv4 address
+            local_ipv4 = None
+            # Iterate through each line of the output
+            for line in output_lines:
+                # Check if the line contains 'IPv4 Address'
+                if 'IPv4 Address' in line:
+                    # Extract the IPv4 address from the line
+                    local_ipv4 = line.split(':')[-1].strip()
+            return local_ipv4
+        except Exception as e:
+            return None
+
 
 def main():
-    os_name = Linux.os_name().lower()
-    logo = imgs[os_name[0]][os_name]
+    if name.lower() != "nt":
+        os_name = Linux.os_name().lower()
+        kernel_version = Linux.kernel_version
+        uptime = Linux.uptime()
+        hostname = Linux.hostname()
+        ip_address = Linux.get_ip()
+    else:
+        os_name = NT.os_name()
+        kernel_version = NT.kernel_version()
+        uptime = NT.uptime()
+        hostname = NT.hostname()
+        ip_address = NT.get_ip()
+
+    logo = imgs[os_name[0].lower()][os_name.lower().split(" ")[0]]
     image = logo["logo"]
     text_color = logo["text"]
-    ip_address = Linux.get_ip()
     
     info = [
         f"{text_color}os{Fore.RESET} │ {os_name}",
-        f"{text_color}kv{Fore.RESET} │ {release()}",
-        f"{text_color}up{Fore.RESET} │ {Linux.uptime()}",
-        f"{text_color}ip{Fore.RESET} │ {ip_address}" if ip_address is not None else "",
-        f"{text_color}hn{Fore.RESET} │ {Linux.hostname()}"
+        f"{text_color}kv{Fore.RESET} │ {kernel_version}",
+        f"{text_color}up{Fore.RESET} │ {uptime}",
+        f"{text_color}ip{Fore.RESET} │ {ip_address}" if ip_address is not None else "N/A",
+        f"{text_color}hn{Fore.RESET} │ {hostname}"
     ]
     
     # Print each line of logo with aligned system information
