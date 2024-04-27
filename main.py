@@ -63,11 +63,6 @@ class NT:
         return f"{system()} {release()}"
     
     @staticmethod
-    def get_ip():
-        hostname = getfqdn()
-        return gethostbyname_ex(hostname)[2][1]
-    
-    @staticmethod
     def kernel_version():
         return version()
 
