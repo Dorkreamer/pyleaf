@@ -110,7 +110,7 @@ class NT:
 def main():
     if name.lower() != "nt":
         os_name = Linux.os_name().lower()
-        kernel_version = Linux.kernel_version
+        kernel_version = Linux.kernel_version()
         uptime = Linux.uptime()
         hostname = Linux.hostname()
         ip_address = Linux.get_ip()
@@ -129,7 +129,7 @@ def main():
         f"{text_color}os{Fore.RESET} │ {os_name}",
         f"{text_color}kv{Fore.RESET} │ {kernel_version}",
         f"{text_color}up{Fore.RESET} │ {uptime}",
-        f"{text_color}ip{Fore.RESET} │ {ip_address}" if ip_address is not None else "N/A",
+        f"{text_color}ip{Fore.RESET} │ {ip_address if ip_address else "N/A"}",
         f"{text_color}hn{Fore.RESET} │ {hostname}"
     ]
     
